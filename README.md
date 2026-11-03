@@ -71,6 +71,10 @@ resolution=1080x1920
 - 新电脑素材缓存为空，首轮会重新下载；可从跑过的电脑拷贝 `scripts\material\` 省时间
 - 需要 TikTok 素材的网络可达性；解析走公开接口，无需任何账号
 
+## 从 WorkBuddy 技能市场安装
+
+在 WorkBuddy 技能中心搜索「**熠剪**」或「**tk-mix-remix**」即可一键安装（ClawHub 市场同步）。
+
 ## License
 
-MIT
+MIT-0（MIT No Attribution）

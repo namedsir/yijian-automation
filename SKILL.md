@@ -1,11 +1,11 @@
 ---
 name: tk-mix-remix
-version: "1.0"
+version: "1.0.0"
 description: >
-  TK/TikTok 素材批量混剪自动化站。监视共享盘文件夹，需求表 xlsx 投放即全自动出片：
+  【熠剪自动化】TK/TikTok 素材批量混剪自动化站。监视共享盘文件夹，需求表 xlsx 投放即全自动出片：
   按视频ID解析无水印直链→下载素材→随机抽镜头混剪→ffmpeg渲染 15秒无声 1080x1920 竖屏成片，
   按SPU归档回共享盘。支持同SPU混剪/跨SPU混剪双模式、断点续传、素材缓存。
-  Trigger: TK混剪、TikTok混剪、视频混剪、同SPU混剪、跨SPU混剪、共享盘剪视频、批量混剪、需求表出片.
+  Trigger: 熠剪, 熠剪自动化, TK混剪, TikTok混剪, 视频混剪, 同SPU混剪, 跨SPU混剪, 共享盘剪视频, 批量混剪, 需求表出片.
 ---
 
 # TK 混剪自动化站
