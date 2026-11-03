@@ -24,7 +24,7 @@ winget install Gyan.FFmpeg
 
 ## 安装为 WorkBuddy Skill
 
-把整个 `tk-mix-remix` 文件夹放到：
+把整个 `yijian-automation` 文件夹放到：
 
 ```
 C:\Users\<你的用户名>\.workbuddy\skills\tk-mix-remix
@@ -73,7 +73,7 @@ resolution=1080x1920
 
 ## 从 WorkBuddy 技能市场安装
 
-在 WorkBuddy 技能中心搜索「**熠剪**」或「**tk-mix-remix**」即可一键安装（ClawHub 市场同步）。
+在 WorkBuddy 技能中心搜索「**熠剪**」或「**yijian-automation**」即可一键安装（ClawHub 市场同步）。
 
 ## License
 

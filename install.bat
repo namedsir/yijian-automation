@@ -42,7 +42,7 @@ echo.
 echo ================================================
 echo  Install finished. ^(熠剪自动化^)
 echo  Next: copy this whole folder to
-echo    C:\Users\^<you^>\.workbuddy\skills\tk-mix-remix
+echo    C:\Users\^<you^>\.workbuddy\skills\yijian-automation
 echo  then say "TK混剪" or "熠剪" in WorkBuddy.
 echo ================================================
 pause

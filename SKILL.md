@@ -1,5 +1,5 @@
 ---
-name: tk-mix-remix
+name: yijian-automation
 version: "1.0.0"
 description: >
   【熠剪自动化】TK/TikTok 素材批量混剪自动化站。监视共享盘文件夹，需求表 xlsx 投放即全自动出片：
