@@ -3,9 +3,9 @@ name: yijian-automation
 version: "1.0.0"
 description: >
   【熠剪自动化】TK/TikTok 素材批量混剪自动化站。监视共享盘文件夹，需求表 xlsx 投放即全自动出片：
-  按视频ID解析无水印直链→下载素材→随机抽镜头混剪→ffmpeg渲染 15秒无声 1080x1920 竖屏成片，
+  按视频ID解析无水印直链→下载素材→随机抽镜头混剪→ffmpeg渲染 15秒 1080x1920 竖屏成片并配统一背景音乐，
   按SPU归档回共享盘。支持同SPU混剪/跨SPU混剪双模式、断点续传、素材缓存。
-  Trigger: 熠剪, 熠剪自动化, TK混剪, TikTok混剪, 视频混剪, 同SPU混剪, 跨SPU混剪, 共享盘剪视频, 批量混剪, 需求表出片.
+  Trigger: 熠剪, 熠剪自动化, TK混剪, TikTok混剪, 视频混剪, 同SPU混剪, 跨SPU混剪, 共享盘剪视频, 批量混剪, 需求表出片, 背景音乐, 配乐.
 ---
 
 # TK 混剪自动化站
@@ -55,17 +55,34 @@ python "{skill目录}/scripts/process_inbox.py" 2>&1
 
 ## 出片规格（默认）
 
-每 SPU 20 条（跨SPU模式=总共20条）· 15.000 秒精确 · 无音频流 · 1080x1920 · 每条 4~5 镜头随机混剪
+每 SPU 20 条（跨SPU模式=总共20条）· 15.000 秒精确 · 1080x1920 · 每条 4~5 镜头随机混剪
+· **统一背景音乐**（默认 `scripts\assets\bgm.mp3`，全片同一条音乐、同一起点、首尾 0.25s 淡入淡出，AAC 192k 立体声）
 
-改默认：共享盘根目录放 config.txt（`per_spu=` / `duration=` / `segments=4-5` / `resolution=1080x1920`），下次任务生效，用完删掉。
+改默认：共享盘根目录放 config.txt（`per_spu=` / `duration=` / `segments=4-5` / `resolution=1080x1920` / `bgm=` / `bgm_start=` / `bgm_volume=`），下次任务生效，用完删掉。
+
+## 背景音乐（换曲 / 静音 / 换起点）
+
+| 需求 | 做法 |
+|---|---|
+| 换一首音乐 | 覆盖 `scripts\assets\bgm.mp3`（任何 mp3/m4a 均可），或 config `bgm=\\服务器\路径\新歌.mp3` |
+| 只听某一段 | config `bgm_start=72`（从第 72 秒开始取，长度自动等于成片时长） |
+| 调音量 | config `bgm_volume=-3`（负数更轻） |
+| 不要音乐 | config `bgm=none` |
+| 新电脑没音乐文件 | 脚本自动从共享盘 `BGM\` 目录取第一个音频并缓存到本地 |
+
+成片音频为重新编码的 AAC，不与素材原声混音（原声一律丢弃）。
+**注意**：音乐版权由使用者负责，商用投放前确认已获授权（TikTok 商用音乐库/正版授权曲库）。
 
 ## 引擎用法（分步调试时才用）
 
 ```bash
 python "{skill目录}/scripts/run_all.py" --xlsx 需求表.xlsx --out 输出目录 \
   --material-dir 缓存目录 --mode normal|cross --per-spu 20 --duration 15 \
-  --segments 4-5 --resolution 1080x1920 --step all|fetch|plan|render
+  --segments 4-5 --resolution 1080x1920 --step all|fetch|plan|render \
+  --bgm assets/bgm.mp3 --bgm-start 0 --bgm-volume 0 --force
 ```
+
+`--no-bgm` 出静音片；`--force` 忽略已存在成片强制重渲（换音乐后重出必用）。
 
 ## 挂定时巡检（用户要求"自动处理"时）
 

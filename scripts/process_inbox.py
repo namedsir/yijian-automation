@@ -63,11 +63,33 @@ DEFAULTS = {
     "duration": 15,
     "segments": "4-5",
     "resolution": "1080x1920",
+    "bgm": "default",   # default=用 scripts/assets/bgm.mp3；none=静音；也可填音频文件绝对路径
+    "bgm_start": 0.0,   # 从音乐第几秒开始取
+    "bgm_volume": 0.0,  # 音量 dB（负数更轻，例如 -3）
 }
 
 
 def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def cache_shared_bgm(local_path):
+    """本机缺 bgm.mp3 时，从共享盘 BGM 目录取第一个音频文件缓存到本地；取不到返回 None。"""
+    d = os.path.join(SHARE, "BGM")
+    if not os.path.isdir(d):
+        return None
+    for f in sorted(os.listdir(d)):
+        if f.lower().endswith((".mp3", ".m4a", ".aac", ".wav")):
+            src = os.path.join(d, f)
+            try:
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                shutil.copy2(src, local_path)
+                log(f"背景音乐已从共享盘缓存到本地：{f}")
+                return local_path
+            except Exception as e:
+                log(f"背景音乐缓存失败，直接使用共享盘文件：{e}")
+                return src
+    return None
 
 
 def read_config():
@@ -152,6 +174,22 @@ def process_one(xlsx_path, cfg):
                "--segments", str(cfg["segments"]),
                "--mode", str(cfg["mode"]),
                "--resolution", str(cfg["resolution"])]
+        # 背景音乐：default=技能自带 assets/bgm.mp3（缺失则从共享盘 BGM 目录取并缓存）；
+        #           none=静音；其它值当音频文件路径
+        bgm = str(cfg.get("bgm", "default")).strip()
+        if bgm.lower() in ("none", "off", "0", ""):
+            cmd.append("--no-bgm")
+        elif bgm.lower() == "default":
+            local = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "bgm.mp3")
+            if not os.path.exists(local):
+                local = cache_shared_bgm(local)
+            if not local:
+                log("提示：本机没有 bgm.mp3，且共享盘 BGM 目录为空 -> 本次成片静音")
+                cmd.append("--no-bgm")
+        else:
+            cmd += ["--bgm", bgm]
+        cmd += ["--bgm-start", str(cfg.get("bgm_start", 0.0)),
+                "--bgm-volume", str(cfg.get("bgm_volume", 0.0))]
         log("执行引擎：" + " ".join(cmd))
         t0 = time.time()
         with open(err_log, "w", encoding="utf-8") as ef:

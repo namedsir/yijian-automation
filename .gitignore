@@ -1,0 +1,5 @@
+scripts/assets/
+scripts/material/
+scripts/work/
+__pycache__/
+*.pyc

@@ -221,12 +221,14 @@ def plan(results, args, seed=20261102):
 
 # ---------------------------------------------------------------- step 3: 渲染
 
-def render_one(variant, out_dir, resolution, crf=20):
+def render_one(variant, out_dir, resolution, crf=20, bgm=None, bgm_start=0.0,
+               bgm_volume=0.0, fade=0.25, force=False):
     spu, v = variant["spu"], variant["variant"]
     w, h = resolution.split("x")
     total_f = sum(it["durationInFrames"] for it in variant["items"])
+    total_s = total_f / 30.0
     out_path = os.path.join(out_dir, spu, f"{spu}_v{v:02d}.mp4")
-    if os.path.exists(out_path) and os.path.getsize(out_path) > 100_000:
+    if not force and os.path.exists(out_path) and os.path.getsize(out_path) > 100_000:
         return out_path, "cached"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     cmd = ["ffmpeg", "-y", "-v", "error"]
@@ -240,19 +242,52 @@ def render_one(variant, out_dir, resolution, crf=20):
             f"crop={w}:{h},fps=30,setsar=1,format=yuv420p[s{i}]")
     filters.append("".join(f"[s{i}]" for i in range(len(variant["items"])))
                    + f"concat=n={len(variant['items'])}:v=1:a=0[v]")
-    cmd += ["-filter_complex", ";".join(filters), "-map", "[v]",
-            "-an", "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
-            "-movflags", "+faststart", "-frames:v", str(total_f), out_path]
+
+    maps = ["-map", "[v]"]
+    if bgm:
+        ai = len(variant["items"])          # 背景音乐作为最后一个输入
+        cmd += ["-stream_loop", "-1", "-i", bgm]
+        af = (f"[{ai}:a]atrim=start={bgm_start:.3f}:duration={total_s:.3f},"
+              f"asetpts=PTS-STARTPTS,volume={bgm_volume}dB")
+        if fade > 0:
+            af += (f",afade=t=in:st=0:d={fade},"
+                   f"afade=t=out:st={total_s - fade:.3f}:d={fade}")
+        filters.append(af + "[a]")
+        maps += ["-map", "[a]", "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2"]
+    else:
+        maps += ["-an"]
+
+    cmd += ["-filter_complex", ";".join(filters)] + maps + [
+        "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
+        "-movflags", "+faststart", "-frames:v", str(total_f), "-t", f"{total_s:.3f}", out_path]
     run_ffmpeg(cmd)
     return out_path, "rendered"
+
+
+def resolve_bgm(args):
+    """解析背景音乐路径：--no-bgm 关闭；--bgm 指定；否则用脚本目录 assets/bgm.mp3。"""
+    if getattr(args, "no_bgm", False):
+        return None
+    if args.bgm:
+        p = args.bgm
+        return p if os.path.exists(p) else None
+    default = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "bgm.mp3")
+    return default if os.path.exists(default) else None
 
 
 def render(plan_out, args):
     out_dir = os.path.join(args.out, "videos")
     jobs = [v for spu in plan_out.values() for v in spu]
+    bgm = resolve_bgm(args)
+    if bgm:
+        log(f"背景音乐：{bgm}（起始 {args.bgm_start}s，音量 {args.bgm_volume}dB）")
+    else:
+        log("背景音乐：无（成片静音）")
     done, failed = 0, []
     with ThreadPoolExecutor(max_workers=max(1, args.render_workers)) as ex:
-        futs = {ex.submit(render_one, v, out_dir, args.resolution): v for v in jobs}
+        futs = {ex.submit(render_one, v, out_dir, args.resolution, 20, bgm,
+                          args.bgm_start, args.bgm_volume, args.bgm_fade, args.force): v
+                for v in jobs}
         for i, fut in enumerate(as_completed(futs), 1):
             v = futs[fut]
             try:
@@ -295,6 +330,12 @@ def main():
     ap.add_argument("--render-workers", type=int, default=2, help="渲染并发")
     ap.add_argument("--step", choices=["all", "fetch", "plan", "render"], default="all")
     ap.add_argument("--only-spu", default="", help="只处理这些 SPU，逗号分隔")
+    ap.add_argument("--bgm", default="", help="背景音乐文件（默认 assets/bgm.mp3，存在即启用）")
+    ap.add_argument("--no-bgm", action="store_true", help="不配背景音乐（成片静音）")
+    ap.add_argument("--bgm-start", type=float, default=0.0, help="从音乐的第几秒开始取")
+    ap.add_argument("--bgm-volume", type=float, default=0.0, help="音乐音量（dB，负数=更轻）")
+    ap.add_argument("--bgm-fade", type=float, default=0.25, help="首尾淡入淡出秒数，0=不做")
+    ap.add_argument("--force", action="store_true", help="忽略已有成片，强制重新渲染")
     args = ap.parse_args()
     args.only_spu = set(args.only_spu.split(",")) if args.only_spu else None
 
